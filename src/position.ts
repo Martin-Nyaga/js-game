@@ -3,7 +3,7 @@ export type Position = {
   y: number
 }
 
-export const goUp = ({ x, y }) => ({ x, y: y - 1 })
-export const goDown = ({ x, y }) => ({ x, y: y + 1 })
-export const goLeft = ({ x, y }) => ({ x: x - 1, y })
-export const goRight = ({ x, y }) => ({ x: x + 1, y })
+export const goUp = ({ x, y }, amt) => ({ x, y: y - amt })
+export const goDown = ({ x, y }, amt) => ({ x, y: y + amt })
+export const goLeft = ({ x, y }, amt) => ({ x: x - amt, y })
+export const goRight = ({ x, y }, amt) => ({ x: x + amt, y })

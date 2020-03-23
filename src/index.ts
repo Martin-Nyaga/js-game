@@ -15,7 +15,16 @@ const gameLoop = (world: World.World, prevTimestamp: number) => {
 }
 
 const main = () => {
-  let world = World.initialWorld()
+  let world = World.initialWorld({
+    scene: {
+      canvasWidth: 1200,
+      canvasHeight: 800,
+      tilePixelSize: 30
+    },
+    mapWidth: 20,
+    mapHeight: 20
+  })
+  console.log(world)
   Scene.init(world)
   Events.bindEvents(Events.InputSink)
   gameLoop(world, now())
