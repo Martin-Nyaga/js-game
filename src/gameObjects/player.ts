@@ -1,5 +1,5 @@
-import * as Position from "./position"
-import { GameObject } from "./world"
+import * as Position from "../position"
+import { GameObject } from "."
 
 export interface Player extends GameObject {
   type: "player"
@@ -14,9 +14,10 @@ export const newPlayer = ({
   type: "player",
   position: position,
   size: 1,
-  speed: 0.2,
+  speed: 0.3,
 })
 export const isPlayer = (object: GameObject) => object.type == "player"
+export const is = isPlayer 
 
 export const goUp = (player: Player) => ({
   ...player,

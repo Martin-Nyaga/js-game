@@ -1,23 +1,21 @@
-import * as Player from "./player"
 import * as Scene from "./scene"
 import * as Events from "./events"
 import * as Position from "./position"
 import { range } from "ramda"
 
-export interface GameObject {
-  type: string
-  position: Position.Position
-  size: number
-}
+import {
+  GameObject,
+  Player,
+  GrassTile,
+  SandTile,
+  WaterTile,
+} from "./gameObjects"
+
 export type World = {
   scene: Scene.Scene
   width: number
   height: number
   objects: GameObject[]
-}
-interface EmptyTile extends GameObject {
-  type: "emptyTile"
-  label: string
 }
 
 type WorldConfig = {
@@ -32,10 +30,9 @@ export const initialWorld = ({
 }: WorldConfig): World => {
   const builtScene = Scene.build(scene)
 
-  const emptyLabelledTiles = buildEmptyTiles(mapWidth, mapHeight)
   return {
     scene: builtScene,
-    objects: (emptyLabelledTiles as GameObject[]).concat(
+    objects: generateMap(mapWidth, mapHeight).concat(
       Player.newPlayer({
         position: {
           x: mapWidth / 2,
@@ -48,21 +45,42 @@ export const initialWorld = ({
   }
 }
 
-const buildEmptyTiles = (width, height) =>
+const generateMap = (width, height): GameObject[] =>
   range(0, width * height).map((i) => {
     const x = i % width
     const y = Math.floor(i / height)
-    return {
-      type: "emptyTile",
-      position: { x, y } as Position.Position,
-      label: i.toString(),
-      size: 1,
-    } as EmptyTile
+
+    if (x > width / 2) {
+      if (y > height / 2) {
+        return {
+          type: "sandTile",
+          position: { x, y } as Position.Position,
+          size: 1,
+          variant: Math.ceil(Math.random() * 5),
+        } as SandTile.SandTile
+      } else {
+        return {
+          type: "waterTile",
+          position: { x, y } as Position.Position,
+          size: 1,
+          variant: Math.ceil(Math.random() * 5),
+        } as WaterTile.WaterTile
+      }
+    } else {
+      return {
+        type: "grassTile",
+        position: { x, y } as Position.Position,
+        size: 1,
+        variant: Math.ceil(Math.random() * 5),
+      } as GrassTile.GrassTile
+    }
   })
 
 // Main function to update the world based on all current events
 export const update = (sink: Events.Sink, world: World) => {
   let player = getPlayer(world)
+  let scene = world.scene
+
   if (sink.keysPressed.up && !isAtTopEnd(world, player))
     player = Player.goUp(player)
   if (sink.keysPressed.down && !isAtBottomEnd(world, player))
@@ -71,7 +89,10 @@ export const update = (sink: Events.Sink, world: World) => {
     player = Player.goRight(player)
   if (sink.keysPressed.left && !isAtLeftEnd(world, player))
     player = Player.goLeft(player)
-  const scene = Scene.followObject(world.scene, player)
+  if (sink.keysPressed.zoomOut) scene = Scene.zoom(scene, -1)
+  if (sink.keysPressed.zoomIn) scene = Scene.zoom(scene, 1)
+
+  scene = Scene.followObject(scene, player)
   return {
     ...world,
     scene: scene,

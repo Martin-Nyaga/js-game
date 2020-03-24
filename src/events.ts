@@ -7,6 +7,8 @@ export const InputSink = {
     down: false,
     left: false,
     right: false,
+    zoomIn: false,
+    zoomOut: false
   },
 }
 export type Sink = typeof InputSink
@@ -23,6 +25,8 @@ const keyToDirectionMap = {
 const updateKeyPressed = (sink: Sink, key: string, value: boolean) => {
   const direction = keyToDirectionMap[key]
   if (direction !== undefined) sink.keysPressed[direction] = value
+  if (key == "z") sink.keysPressed.zoomIn = value
+  if (key == "o") sink.keysPressed.zoomOut = value
 }
 
 const handleKeyDown = (sink: Sink, event: any) =>

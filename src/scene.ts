@@ -1,7 +1,14 @@
-import * as Player from "./player"
+import {
+  GameObject,
+  Player,
+  EmptyTile,
+  GrassTile,
+  SandTile,
+  WaterTile,
+} from "./gameObjects"
 import * as JCSS from "./jcss"
 import { curry } from "ramda"
-import { World, GameObject } from "./world"
+import { World } from "./world"
 
 type Offset = {
   top: number
@@ -27,7 +34,7 @@ export type Scene = {
 const canvasStyle = {
   border: "thick black solid",
   display: "block",
-  margin: "100px auto",
+  margin: "0 auto",
 }
 export const init = (world: World) => {
   const { scene } = world
@@ -47,6 +54,19 @@ export const build = (config: SceneConfig): Scene => {
     tileWidth: toTiles(config.tilePixelSize, config.canvasWidth),
     tileHeight: toTiles(config.tilePixelSize, config.canvasHeight),
     config: config,
+  }
+}
+
+export const zoom = (scene, amt) => {
+  const newPixelSize = scene.config.tilePixelSize + amt
+  return {
+    ...scene,
+    tileWidth: toTiles(newPixelSize, scene.config.canvasWidth),
+    tileHeight: toTiles(newPixelSize, scene.config.canvasHeight),
+    config: {
+      ...scene.config,
+      tilePixelSize: newPixelSize,
+    },
   }
 }
 
@@ -82,8 +102,11 @@ const isInScene = curry(
 )
 
 const drawObject = curry((scene, object: GameObject) => {
-  if (Player.isPlayer(object)) drawPlayer(scene, object)
-  if (object.type == "emptyTile") drawEmptyTile(scene, object)
+  if (Player.is(object)) drawPlayer(scene, object)
+  if (GrassTile.is(object)) drawGrassTile(scene, object)
+  if (WaterTile.is(object)) drawWaterTile(scene, object)
+  if (SandTile.is(object)) drawSandTile(scene, object)
+  if (EmptyTile.is(object)) drawEmptyTile(scene, object)
 })
 
 const drawPlayer = (scene, player) => {
@@ -98,9 +121,27 @@ const drawEmptyTile = (scene, tile) => {
   let [x, y, w, h] = getPixelBounds(scene, tile)
   ctx.fillStyle = "#fff"
   ctx.fillRect(x, y, w, h)
-  ctx.font = `${h / 2} px Arial`
-  ctx.fillStyle = "#000"
-  ctx.fillText(tile.label, x + w / 2, y + h / 2)
+}
+
+const drawGrassTile = (scene, tile) => {
+  const { renderingContext: ctx } = scene
+  let [x, y, w, h] = getPixelBounds(scene, tile)
+  ctx.fillStyle = GrassTile.color(tile)
+  ctx.fillRect(x, y, w, h)
+}
+
+const drawSandTile = (scene, tile) => {
+  const { renderingContext: ctx } = scene
+  let [x, y, w, h] = getPixelBounds(scene, tile)
+  ctx.fillStyle = SandTile.color(tile)
+  ctx.fillRect(x, y, w, h)
+}
+
+const drawWaterTile = (scene, tile) => {
+  const { renderingContext: ctx } = scene
+  let [x, y, w, h] = getPixelBounds(scene, tile)
+  ctx.fillStyle = WaterTile.color(tile)
+  ctx.fillRect(x, y, w, h)
 }
 
 const getPixelBounds = (scene, object) =>
@@ -116,7 +157,7 @@ const getPixelBounds = (scene, object) =>
 export const followObject = (scene, object) => {
   const newOffset = {
     top: object.position.y - scene.tileHeight / 2,
-   left: object.position.x - scene.tileWidth / 2,
+    left: object.position.x - scene.tileWidth / 2,
   }
   // console.log(scene)
   // console.log(object)
