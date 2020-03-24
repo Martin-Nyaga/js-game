@@ -1,6 +1,7 @@
 import * as Position from "../position"
 
 export interface GameObject {
+  id: number,
   type: string
   position: Position.Position
   size: number

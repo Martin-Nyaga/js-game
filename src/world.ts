@@ -1,7 +1,9 @@
+import { range, clone, compose } from "ramda"
+
 import * as Scene from "./scene"
 import * as Events from "./events"
 import * as Position from "./position"
-import { range } from "ramda"
+import * as Store from "./objectStore"
 
 import {
   GameObject,
@@ -15,7 +17,8 @@ export type World = {
   scene: Scene.Scene
   width: number
   height: number
-  objects: GameObject[]
+  objects: Store.ObjectStore
+  playerPosition: Position.Position
 }
 
 type WorldConfig = {
@@ -29,37 +32,45 @@ export const initialWorld = ({
   mapHeight,
 }: WorldConfig): World => {
   const builtScene = Scene.build(scene)
+  let objects = generateMap(mapWidth, mapHeight)
+  const playerPosition: Position.Position = {
+    x: Math.floor(mapWidth / 2),
+    y: Math.floor(mapHeight / 2),
+  }
+  const player = Player.newPlayer({
+    position: playerPosition,
+  })
+  objects = Store.add(player, objects)
 
   return {
     scene: builtScene,
-    objects: generateMap(mapWidth, mapHeight).concat(
-      Player.newPlayer({
-        position: {
-          x: mapWidth / 2,
-          y: mapHeight / 2,
-        } as Position.Position,
-      })
-    ),
+    objects,
+    playerPosition,
     width: mapWidth,
     height: mapHeight,
   }
 }
 
-const generateMap = (width, height): GameObject[] =>
-  range(0, width * height).map((i) => {
+const objectId = () => Math.floor(Math.random() * 8)
+
+const generateMap = (width, height): Store.ObjectStore =>
+  range(0, width * height).reduce((store, i) => {
     const x = i % width
     const y = Math.floor(i / height)
 
+    let tile
     if (x > width / 2) {
       if (y > height / 2) {
-        return {
+        tile = {
+          id: objectId(),
           type: "sandTile",
           position: { x, y } as Position.Position,
           size: 1,
           variant: Math.ceil(Math.random() * 5),
         } as SandTile.SandTile
       } else {
-        return {
+        tile = {
+          id: objectId(),
           type: "waterTile",
           position: { x, y } as Position.Position,
           size: 1,
@@ -67,18 +78,21 @@ const generateMap = (width, height): GameObject[] =>
         } as WaterTile.WaterTile
       }
     } else {
-      return {
+      tile = {
+        id: objectId(),
         type: "grassTile",
         position: { x, y } as Position.Position,
         size: 1,
         variant: Math.ceil(Math.random() * 5),
       } as GrassTile.GrassTile
     }
-  })
+    return Store.add(tile, store)
+  }, {})
 
 // Main function to update the world based on all current events
 export const update = (sink: Events.Sink, world: World) => {
   let player = getPlayer(world)
+  let oldPlayer = clone(player)
   let scene = world.scene
 
   if (sink.keysPressed.up && !isAtTopEnd(world, player))
@@ -96,14 +110,18 @@ export const update = (sink: Events.Sink, world: World) => {
   return {
     ...world,
     scene: scene,
-    objects: replacePlayer(world.objects, player),
+    playerPosition: player.position,
+    objects: updatePlayer(world.objects, oldPlayer, player),
   }
 }
 
-const replacePlayer = (objects, newPlayer) =>
-  objects.map((object) => (Player.isPlayer(object) ? newPlayer : object))
+const updatePlayer = (objects, oldPlayer, newPlayer) => {
+  objects = Store.add(newPlayer, objects)
+  return Store.remove(oldPlayer, objects)
+}
 
-const getPlayer = (world) => world.objects.find(Player.isPlayer)
+const getPlayer = (world: World): Player.Player =>
+  Store.get(world.playerPosition, world.objects).find(Player.is)
 
 const minDistanceToEdge = 0.01
 const isAtTopEnd = (_world, object) => object.position.y <= minDistanceToEdge

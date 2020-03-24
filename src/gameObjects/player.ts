@@ -11,6 +11,7 @@ export const newPlayer = ({
 }: {
   position: Position.Position
 }): Player => ({
+  id: 0,
   type: "player",
   position: position,
   size: 1,

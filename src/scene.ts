@@ -6,8 +6,10 @@ import {
   SandTile,
   WaterTile,
 } from "./gameObjects"
+import { Position } from "./position"
+import * as Store from "./objectStore"
 import * as JCSS from "./jcss"
-import { curry } from "ramda"
+import { range, curry } from "ramda"
 import { World } from "./world"
 
 type Offset = {
@@ -85,8 +87,19 @@ export const render = (world: World) => {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.fillStyle = "#f5f5f5"
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  world.objects.filter(isInScene(scene)).map(drawObject(scene))
+  getObjectsInScene(world, scene).map(object => drawObject(scene, object))
   return world
+}
+
+const getObjectsInScene = (world: World, scene: Scene): GameObject[] => {
+  const [top, bottom, right, left] =
+    [topEdge, bottomEdge, rightEdge, leftEdge].map(f => Math.floor(f(scene)))
+  return range(left, right + 1).flatMap(x => {
+    return range(top, bottom + 1).flatMap(y => {
+      [x, y] = [x, y].map(Math.floor)
+      return Store.get({ x, y } as Position, world.objects)
+    })
+  }).filter(Boolean)
 }
 
 const topEdge = (scene) => scene.mapTileOffset.top - 1
@@ -101,13 +114,13 @@ const isInScene = curry(
     rightEdge(scene) >= object.position.x
 )
 
-const drawObject = curry((scene, object: GameObject) => {
+const drawObject = (scene, object: GameObject) => {
   if (Player.is(object)) drawPlayer(scene, object)
   if (GrassTile.is(object)) drawGrassTile(scene, object)
   if (WaterTile.is(object)) drawWaterTile(scene, object)
   if (SandTile.is(object)) drawSandTile(scene, object)
   if (EmptyTile.is(object)) drawEmptyTile(scene, object)
-})
+}
 
 const drawPlayer = (scene, player) => {
   const { renderingContext: ctx } = scene

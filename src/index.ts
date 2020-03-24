@@ -5,6 +5,7 @@ import * as Scene from "./scene"
 
 const FPS = 60
 const now = () => new Date().getTime()
+
 const gameLoop = (world: World.World, prevTimestamp: number) => {
   const timestamp = now()
   const elapsed = timestamp - prevTimestamp
@@ -24,7 +25,7 @@ const main = () => {
     mapWidth: 300,
     mapHeight: 300
   })
-  console.log(world)
+  console.log("World: ", world)
   Scene.init(world)
   Events.bindEvents(Events.InputSink)
   gameLoop(world, now())
