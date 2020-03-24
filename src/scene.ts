@@ -63,13 +63,15 @@ export const render = (world: World) => {
   const { scene } = world
   const { renderingContext: ctx, canvas } = scene
   ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = "#f5f5f5"
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
   world.objects.filter(isInScene(scene)).map(drawObject(scene))
   return world
 }
 
-const topEdge = (scene) => scene.mapTileOffset.top
+const topEdge = (scene) => scene.mapTileOffset.top - 1
 const bottomEdge = (scene) => scene.mapTileOffset.top + scene.tileHeight
-const leftEdge = (scene) => scene.mapTileOffset.left
+const leftEdge = (scene) => scene.mapTileOffset.left - 1
 const rightEdge = (scene) => scene.mapTileOffset.left + scene.tileWidth
 const isInScene = curry(
   (scene, object) =>
@@ -94,6 +96,8 @@ const drawPlayer = (scene, player) => {
 const drawEmptyTile = (scene, tile) => {
   const { renderingContext: ctx } = scene
   let [x, y, w, h] = getPixelBounds(scene, tile)
+  ctx.fillStyle = "#fff"
+  ctx.fillRect(x, y, w, h)
   ctx.font = `${h / 2} px Arial`
   ctx.fillStyle = "#000"
   ctx.fillText(tile.label, x + w / 2, y + h / 2)
@@ -112,7 +116,7 @@ const getPixelBounds = (scene, object) =>
 export const followObject = (scene, object) => {
   const newOffset = {
     top: object.position.y - scene.tileHeight / 2,
-    left: object.position.x - scene.tileWidth / 2,
+   left: object.position.x - scene.tileWidth / 2,
   }
   // console.log(scene)
   // console.log(object)

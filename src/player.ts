@@ -6,14 +6,15 @@ export interface Player extends GameObject {
   speed: number // player speed in tiles per frame
 }
 
-export const newPlayer = (): Player => ({
+export const newPlayer = ({
+  position,
+}: {
+  position: Position.Position
+}): Player => ({
   type: "player",
-  position: {
-    x: 10,
-    y: 10,
-  },
+  position: position,
   size: 1,
-  speed: 0.2
+  speed: 0.2,
 })
 export const isPlayer = (object: GameObject) => object.type == "player"
 

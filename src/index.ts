@@ -21,8 +21,8 @@ const main = () => {
       canvasHeight: 800,
       tilePixelSize: 30
     },
-    mapWidth: 20,
-    mapHeight: 20
+    mapWidth: 100,
+    mapHeight: 100
   })
   console.log(world)
   Scene.init(world)
