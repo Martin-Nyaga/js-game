@@ -1,3 +1,4 @@
+import * as THREE from "three"
 import {
   GameObject,
   Player,
@@ -6,11 +7,11 @@ import {
   SandTile,
   WaterTile,
 } from "./gameObjects"
-import { Position } from "./position"
+import * as Position from "./position"
 import * as Store from "./objectStore"
 import * as JCSS from "./jcss"
-import { range, curry } from "ramda"
-import { World } from "./world"
+import * as R from "ramda"
+import * as World from "./world"
 
 type Offset = {
   top: number
@@ -23,157 +24,233 @@ export type SceneConfig = {
   tilePixelSize: number
 }
 
+type WebGlObject = {
+  scene: THREE.Scene
+  renderer: THREE.WebGLRenderer
+  camera: THREE.PerspectiveCamera
+  geometryCache: { [key: string]: THREE.Geometry }
+}
+
 export type Scene = {
-  canvas: HTMLCanvasElement
-  renderingContext: CanvasRenderingContext2D
-  mapTileOffset: Offset
+  webGl: WebGlObject
+  config: SceneConfig
   tileWidth: number
   tileHeight: number
-
-  config: SceneConfig
 }
 
 const canvasStyle = {
   border: "thick black solid",
   display: "block",
-  margin: "0 auto",
+  margin: "100px auto",
 }
-export const init = (world: World) => {
+export const init = (world: World.World) => {
   const { scene } = world
-  document.body.append(scene.canvas)
+  const { webGl: gl } = scene
+  const canvas = gl.renderer.domElement
+  canvas.setAttribute("style", JCSS.toCss(canvasStyle))
+  document.body.append(canvas)
   return world
 }
-
-const toPixels = curry((tilePixelSize, tiles) => tiles * tilePixelSize)
-const toTiles = curry((tilePixelSize, px) => px / tilePixelSize)
 
 export const build = (config: SceneConfig): Scene => {
-  const canvas = buildCanvas(config.canvasWidth, config.canvasHeight)
+  const webGl = buildWebGlObject(config.canvasWidth, config.canvasHeight)
   return {
-    canvas,
-    renderingContext: canvas.getContext("2d"),
-    mapTileOffset: { top: 0, left: 0 },
-    tileWidth: toTiles(config.tilePixelSize, config.canvasWidth),
-    tileHeight: toTiles(config.tilePixelSize, config.canvasHeight),
-    config: config,
+    webGl,
+    config
   }
 }
 
-export const zoom = (scene, amt) => {
-  const newPixelSize = scene.config.tilePixelSize + amt
+const buildWebGlObject = (width, height): WebGlObject => {
+  const scene = new THREE.Scene()
+  const fieldOfView = 75
+  const aspect = width / height
+  const near = 0.1
+  const far = 1000
+
+  const camera = new THREE.PerspectiveCamera(fieldOfView, aspect, near, far)
+  const renderer = new THREE.WebGLRenderer()
+  renderer.setSize(width, height)
+  camera.position.z = 1
+
   return {
-    ...scene,
-    tileWidth: toTiles(newPixelSize, scene.config.canvasWidth),
-    tileHeight: toTiles(newPixelSize, scene.config.canvasHeight),
-    config: {
-      ...scene.config,
-      tilePixelSize: newPixelSize,
-    },
+    scene,
+    renderer,
+    camera,
+    geometryCache: {},
   }
 }
 
-const buildCanvas = (width, height): HTMLCanvasElement => {
-  const canvas = document.createElement("canvas")
-  canvas.width = width
-  canvas.height = height
-  canvas.setAttribute("style", JCSS.toCss(canvasStyle))
-  return canvas
-}
+// TODO: Implement Zooming
+// export const zoom = (scene, amt) => {
+//   const newPixelSize = scene.config.tilePixelSize + amt
+//   return {
+//     ...scene,
+//     config: {
+//       ...scene.config,
+//       tilePixelSize: newPixelSize,
+//     },
+//   }
+// }
 
 // Main function to output the world to the screen
-export const render = (world: World) => {
+export const render = (world: World.World) => {
   const { scene } = world
-  const { renderingContext: ctx, canvas } = scene
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle = "#f5f5f5"
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
-  getObjectsInScene(world, scene).map(object => drawObject(scene, object))
-  return world
+  const { webGl: gl } = scene
+  const player = World.getPlayer(world)
+  const cameraCentre = toGlCoordinate(world, player.position)
+  gl.camera.position.x = cameraCentre.x
+  gl.camera.position.y = cameraCentre.y
+
+  // TODO: off White background for empty canvas
+  // ctx.fillStyle = "#f5f5f5"
+  // ctx.fillRect(0, 0, canvas.width, canvas.height)
+  world.objects.dirty
+    .map((id) => Store.getById(id, world.objects))
+    .forEach(drawObject(world))
+
+  // console.log("Render")
+  // console.log(world.scene)
+  // console.log(gl.scene)
+  gl.renderer.render(gl.scene, gl.camera)
+
+  return {
+    ...world,
+    objects: Store.clearDirty(world.objects),
+  }
 }
 
-const getObjectsInScene = (world: World, scene: Scene): GameObject[] => {
-  const [top, bottom, right, left] =
-    [topEdge, bottomEdge, rightEdge, leftEdge].map(f => Math.floor(f(scene)))
-  return range(left, right + 1).flatMap(x => {
-    return range(top, bottom + 1).flatMap(y => {
-      [x, y] = [x, y].map(Math.floor)
-      return Store.get({ x, y } as Position, world.objects)
-    })
-  }).filter(Boolean)
+// const getObjectsInScene = (world: World, scene: Scene): GameObject[] => {
+//   const [top, bottom, right, left] = [
+//     topEdge,
+//     bottomEdge,
+//     rightEdge,
+//     leftEdge,
+//   ].map((f) => Math.floor(f(scene)))
+//   return R.range(left, right + 1)
+//     .flatMap((x) => {
+//       return R.range(top, bottom + 1).flatMap((y) => {
+//         ;[x, y] = [x, y].map(Math.floor)
+//         return Store.get({ x, y } as Position, world.objects)
+//       })
+//     })
+//     .filter(Boolean)
+// }
+
+// const topEdge = (scene) => scene.mapTileOffset.top - 1
+// const bottomEdge = (scene) => scene.mapTileOffset.top + scene.tileHeight
+// const leftEdge = (scene) => scene.mapTileOffset.left - 1
+// const rightEdge = (scene) => scene.mapTileOffset.left + scene.tileWidth
+
+const drawObject = R.curry((world, object: GameObject) => {
+  if (Player.is(object)) drawPlayer(world, object)
+  if (GrassTile.is(object)) drawGrassTile(world, object)
+  // if (WaterTile.is(object)) drawWaterTile(scene, object)
+  // if (SandTile.is(object)) drawSandTile(scene, object)
+  // if (EmptyTile.is(object)) drawEmptyTile(scene, object)
+})
+
+const drawPlayer = (world, player) => {
+  const geometry = readCached(
+    world.scene.webGl.geometryCache,
+    player.type,
+    () => {
+      const sizeX = player.size,
+      const sizeY = player.size
+      return new THREE.PlaneGeometry(sizeX, sizeY)
+    }
+  )
+  drawGenericColoredTile(world, player.id, player.position, geometry, "#000000")
 }
 
-const topEdge = (scene) => scene.mapTileOffset.top - 1
-const bottomEdge = (scene) => scene.mapTileOffset.top + scene.tileHeight
-const leftEdge = (scene) => scene.mapTileOffset.left - 1
-const rightEdge = (scene) => scene.mapTileOffset.left + scene.tileWidth
-const isInScene = curry(
-  (scene, object) =>
-    topEdge(scene) <= object.position.y &&
-    leftEdge(scene) <= object.position.x &&
-    bottomEdge(scene) >= object.position.y &&
-    rightEdge(scene) >= object.position.x
-)
-
-const drawObject = (scene, object: GameObject) => {
-  if (Player.is(object)) drawPlayer(scene, object)
-  if (GrassTile.is(object)) drawGrassTile(scene, object)
-  if (WaterTile.is(object)) drawWaterTile(scene, object)
-  if (SandTile.is(object)) drawSandTile(scene, object)
-  if (EmptyTile.is(object)) drawEmptyTile(scene, object)
+const readCached = (cache, key, fn) => {
+  let value = cache[key]
+  if (value == undefined) {
+    value = fn()
+    cache[key] = value
+  }
+  return value
 }
 
-const drawPlayer = (scene, player) => {
-  const { renderingContext: ctx } = scene
-  ctx.fillStyle = "#000"
-  let [x, y, w, h] = getPixelBounds(scene, player)
-  ctx.fillRect(x, y, w, h)
+const drawGrassTile = (world, tile) => {
+  const geometry = readCached(
+    world.scene.webGl.geometryCache,
+    tile.type,
+    () => {
+      const sizeX = tile.size / world.scene.tileWidth
+      const sizeY = tile.size / world.scene.tileHeight
+      return new THREE.PlaneGeometry(sizeX, sizeY)
+    }
+  )
+  drawGenericColoredTile(
+    world,
+    tile.id,
+    tile.position,
+    geometry,
+    GrassTile.color(tile)
+  )
 }
 
-const drawEmptyTile = (scene, tile) => {
-  const { renderingContext: ctx } = scene
-  let [x, y, w, h] = getPixelBounds(scene, tile)
-  ctx.fillStyle = "#fff"
-  ctx.fillRect(x, y, w, h)
+const drawGenericColoredTile = (world, id, position, geometry, color) => {
+  const { webGl: gl } = world.scene
+
+  // Convert map tile coordinates to gl coordinates. Map tiles go from 0 ->
+  // width, 0 -> height, while gl coordinates go from -1 to 1 on both
+  // axes.
+  const { x, y } = toGlCoordinate(world, position)
+
+  // Also convert map tile sizes to gl sizes. A tile of size  1 on the map is
+  // actually size 2/width in webGl
+
+  const tile = gl.scene.getObjectByName(id)
+  if (tile) {
+    tile.position.x = x
+    tile.position.y = y
+  } else {
+    const material = new THREE.MeshBasicMaterial({ color })
+    const newTile = new THREE.Mesh(geometry, material)
+    newTile.name = id
+    newTile.position.x = x
+    newTile.position.y = y
+    gl.scene.add(newTile)
+  }
 }
 
-const drawGrassTile = (scene, tile) => {
-  const { renderingContext: ctx } = scene
-  let [x, y, w, h] = getPixelBounds(scene, tile)
-  ctx.fillStyle = GrassTile.color(tile)
-  ctx.fillRect(x, y, w, h)
-}
+// const drawSandTile = (world, tile) =>
+//   drawGenericColoredTile(
+//     world,
+//     tile.id,
+//     tile.position,
+//     tile.size,
+//     SandTile.color(tile)
+//   )
 
-const drawSandTile = (scene, tile) => {
-  const { renderingContext: ctx } = scene
-  let [x, y, w, h] = getPixelBounds(scene, tile)
-  ctx.fillStyle = SandTile.color(tile)
-  ctx.fillRect(x, y, w, h)
-}
+// const drawWaterTile = (world, tile) =>
+//   drawGenericColoredTile(
+//     world,
+//     tile.id,
+//     tile.position,
+//     tile.size,
+//     WaterTile.color(tile)
+//   )
 
-const drawWaterTile = (scene, tile) => {
-  const { renderingContext: ctx } = scene
-  let [x, y, w, h] = getPixelBounds(scene, tile)
-  ctx.fillStyle = WaterTile.color(tile)
-  ctx.fillRect(x, y, w, h)
-}
+// Map world tile coordinates to gl Coordinates which are always -1 -> 1
+// Then include the scene windowing by scaling by half of the gl width & height
+const toGlCoordinate = (world, position) => ({
+  x: (((position.x / world.width) * 2 - 1) * glWidth(world) / 2),
+  y: (-1 * ((position.y / world.height) * 2 - 1) * glHeight(world) / 2),
+})
 
-const getPixelBounds = (scene, object) =>
-  [
-    object.position.x - scene.mapTileOffset.left,
-    object.position.y - scene.mapTileOffset.top,
-    object.size,
-    object.size,
-  ].map(toPixels(scene.config.tilePixelSize))
+const glWidth = (world) => (world.width / world.scene.tileWidth)
+const glHeight = (world) => (world.height / world.scene.tileHeight)
 
 // Make sure object is always at the center of the scene
 // by updating offset based on width and height
-export const followObject = (scene, object) => {
-  const newOffset = {
-    top: object.position.y - scene.tileHeight / 2,
-    left: object.position.x - scene.tileWidth / 2,
-  }
-  // console.log(scene)
-  // console.log(object)
-  // console.log(newOffset)
-  return { ...scene, mapTileOffset: newOffset }
-}
+// export const followObject = (scene, object) => {
+//   const newOffset = {
+//     top: object.position.y - scene.tileHeight / 2,
+//     left: object.position.x - scene.tileWidth / 2,
+//   }
+//   return { ...scene, mapTileOffset: newOffset }
+// }
+
+export const getDomElement = (scene) => scene.webGl.renderer.domElement

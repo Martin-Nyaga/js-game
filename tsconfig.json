@@ -2,6 +2,7 @@
   "compilerOptions": {
     "sourceMap": true,
     "target": "es6",
-    "lib": ["dom", "esnext", "es2019"]
+    "lib": ["dom", "esnext", "es2019"],
+    "moduleResolution": "node"
   }
 }
