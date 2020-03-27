@@ -1,5 +1,15 @@
-- At some point I will need to understand the difference between WebGL1 and
-  WebGL2, not now though
+Doing now
+- Zooming map with the mouse wheel
+- Map generation
 
-- I just realised that the implications of WebGls axis scheme means
-that having non-square maps is nasty. So while canvas can be any size. Practically, I will limit maps to square sizes.
+Keep in mind
+
+- I just realised that the implications of WebGls axis scheme means that
+  having non-square maps is nasty. So while canvas can be any size.
+  Practically, I will limit maps to square sizes.
+
+To do at some point
+
+- Understand the difference between WebGL1
+  and WebGL2, and see if it's relevant
+- Test on different screen resolutions, to see how WebGL drawing changes

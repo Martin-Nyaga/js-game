@@ -2,14 +2,15 @@ import { partial } from "ramda"
 
 // Sink to receive all player inputs
 export const InputSink = {
-  keysPressed: {
+  keys: {
     up: false,
     down: false,
     left: false,
     right: false,
     zoomIn: false,
-    zoomOut: false
+    zoomOut: false,
   },
+  mouse: {},
 }
 export type Sink = typeof InputSink
 
@@ -24,9 +25,9 @@ const keyToDirectionMap = {
 // Impure
 const updateKeyPressed = (sink: Sink, key: string, value: boolean) => {
   const direction = keyToDirectionMap[key]
-  if (direction !== undefined) sink.keysPressed[direction] = value
-  if (key == "z") sink.keysPressed.zoomIn = value
-  if (key == "o") sink.keysPressed.zoomOut = value
+  if (direction !== undefined) sink.keys[direction] = value
+  if (key == "i") sink.keys.zoomIn = value
+  if (key == "o") sink.keys.zoomOut = value
 }
 
 const handleKeyDown = (sink: Sink, event: any) =>
@@ -35,15 +36,31 @@ const handleKeyDown = (sink: Sink, event: any) =>
 const handleKeyUp = (sink: Sink, event: any) =>
   updateKeyPressed(sink, getKey(event), false)
 
-const stopAllKeyPresses = (sink) => {
-  for (let key in sink.keysPressed) {
-    sink.keysPressed[key] = false
+const handleMouseWheel = (sink: Sink, event: any) => {
+  const delta = Math.sign(event.deltaY)
+  if (delta > 0) {
+    sink.keys.zoomIn = true
+  } else {
+    sink.keys.zoomOut = true
   }
 }
 
-// Stop all key presses
+export const flushZoom = (sink: Sink) => {
+  sink.keys.zoomOut = false
+  sink.keys.zoomIn = false
+}
+export const flush = (sink) => {
+  for (let key in sink.keys) {
+    sink.keys[key] = false
+  }
+  for (let action in sink.mouse) {
+    sink.mouse[action] = false
+  }
+}
+
+// Flush the sink when document is unfocused
 const handleFocusChange = (sink: Sink, event: any) => {
-  if (!document.hasFocus()) stopAllKeyPresses(sink)
+  if (!document.hasFocus()) flush(sink)
 }
 
 export const bindEvents = (sink: Sink) => {
@@ -53,4 +70,5 @@ export const bindEvents = (sink: Sink) => {
     "visibilitychange",
     partial(handleFocusChange, [sink])
   )
+  window.addEventListener("wheel", partial(handleMouseWheel, [sink]))
 }

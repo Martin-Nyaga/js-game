@@ -12,6 +12,7 @@ import * as Store from "./objectStore"
 import * as JCSS from "./jcss"
 import * as R from "ramda"
 import * as World from "./world"
+import * as Utils from "./utils"
 
 export type SceneConfig = {
   canvasWidth: number
@@ -52,6 +53,9 @@ export const build = (config: SceneConfig): Scene => {
   }
 }
 
+const DEFAULT_CAMERA_Z = 15
+const MIN_CAMERA_Z = 6
+const MAX_CAMERA_Z = 25
 const buildWebGlObject = (width, height): WebGlObject => {
   const scene = new THREE.Scene()
   const fieldOfView = 75
@@ -72,17 +76,10 @@ const buildWebGlObject = (width, height): WebGlObject => {
   }
 }
 
-// TODO: Implement Zooming
-// export const zoom = (scene, amt) => {
-//   const newPixelSize = scene.config.tilePixelSize + amt
-//   return {
-//     ...scene,
-//     config: {
-//       ...scene.config,
-//       tilePixelSize: newPixelSize,
-//     },
-//   }
-// }
+export const zoom = (scene: Scene, amt: number) => {
+  scene.webGl.camera.position.z = Utils.constrain(scene.webGl.camera.position.z + amt, MIN_CAMERA_Z, MAX_CAMERA_Z)
+  return scene
+}
 
 // Main function to output the world to the screen
 export const render = (world: World.World) => {
@@ -93,16 +90,10 @@ export const render = (world: World.World) => {
   gl.camera.position.x = cameraCentre.x
   gl.camera.position.y = cameraCentre.y
 
-  // TODO: off White background for empty canvas
-  // ctx.fillStyle = "#f5f5f5"
-  // ctx.fillRect(0, 0, canvas.width, canvas.height)
   world.objects.dirty
     .map((id) => Store.getById(id, world.objects))
     .forEach(drawObject(world))
 
-  // console.log("Render")
-  // console.log(world.scene)
-  // console.log(gl.scene)
   gl.renderer.render(gl.scene, gl.camera)
 
   return {

@@ -39,7 +39,7 @@ const main = () => {
 }
 
 const startButton = document.getElementById("start") as HTMLInputElement
-startButton.addEventListener("click", (e) => {
+startButton.addEventListener("click", (_e) => {
   startButton.parentElement.removeChild(startButton)
   main()
 })

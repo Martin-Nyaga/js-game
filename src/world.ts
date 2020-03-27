@@ -72,14 +72,15 @@ export const update = (sink: Events.Sink, world: World) => {
   const dirty = []
 
   const { moved: playerMoved, player: newPlayer } = movePlayer(
-    sink.keysPressed,
+    sink.keys,
     world,
     player
   )
   if (playerMoved) dirty.push(newPlayer)
 
-  // if (sink.keysPressed.zoomOut) scene = Scene.zoom(scene, -1)
-  // if (sink.keysPressed.zoomIn) scene = Scene.zoom(scene, 1)
+  if (sink.keys.zoomOut) scene = Scene.zoom(scene, -1)
+  if (sink.keys.zoomIn) scene = Scene.zoom(scene, 1)
+  Events.flushZoom(sink)
   let objects = Store.markDirty(dirty, world.objects)
   objects = updatePlayer(oldPlayer, newPlayer, objects)
 
@@ -90,23 +91,23 @@ export const update = (sink: Events.Sink, world: World) => {
   }
 }
 
-const movePlayer = (keysPressed, world, player) => {
+const movePlayer = (keys, world, player) => {
   let moved = false
 
-  if (keysPressed.up && !isAtTopEnd(world, player)) {
+  if (keys.up && !isAtTopEnd(world, player)) {
     moved = true
     player = Player.goUp(player)
   }
-  if (keysPressed.down && !isAtBottomEnd(world, player)) {
+  if (keys.down && !isAtBottomEnd(world, player)) {
     moved = true
     player = Player.goDown(player)
   }
-  if (keysPressed.right && !isAtRightEnd(world, player)) {
+  if (keys.right && !isAtRightEnd(world, player)) {
     moved = true
 
     player = Player.goRight(player)
   }
-  if (keysPressed.left && !isAtLeftEnd(world, player)) {
+  if (keys.left && !isAtLeftEnd(world, player)) {
     moved = true
     player = Player.goLeft(player)
   }
