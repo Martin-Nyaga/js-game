@@ -13,15 +13,9 @@ import * as JCSS from "./jcss"
 import * as R from "ramda"
 import * as World from "./world"
 
-type Offset = {
-  top: number
-  left: number
-}
-
 export type SceneConfig = {
   canvasWidth: number
   canvasHeight: number
-  tilePixelSize: number
 }
 
 type WebGlObject = {
@@ -34,8 +28,6 @@ type WebGlObject = {
 export type Scene = {
   webGl: WebGlObject
   config: SceneConfig
-  tileWidth: number
-  tileHeight: number
 }
 
 const canvasStyle = {
@@ -56,7 +48,7 @@ export const build = (config: SceneConfig): Scene => {
   const webGl = buildWebGlObject(config.canvasWidth, config.canvasHeight)
   return {
     webGl,
-    config
+    config,
   }
 }
 
@@ -70,7 +62,7 @@ const buildWebGlObject = (width, height): WebGlObject => {
   const camera = new THREE.PerspectiveCamera(fieldOfView, aspect, near, far)
   const renderer = new THREE.WebGLRenderer()
   renderer.setSize(width, height)
-  camera.position.z = 1
+  camera.position.z = 15
 
   return {
     scene,
@@ -119,28 +111,6 @@ export const render = (world: World.World) => {
   }
 }
 
-// const getObjectsInScene = (world: World, scene: Scene): GameObject[] => {
-//   const [top, bottom, right, left] = [
-//     topEdge,
-//     bottomEdge,
-//     rightEdge,
-//     leftEdge,
-//   ].map((f) => Math.floor(f(scene)))
-//   return R.range(left, right + 1)
-//     .flatMap((x) => {
-//       return R.range(top, bottom + 1).flatMap((y) => {
-//         ;[x, y] = [x, y].map(Math.floor)
-//         return Store.get({ x, y } as Position, world.objects)
-//       })
-//     })
-//     .filter(Boolean)
-// }
-
-// const topEdge = (scene) => scene.mapTileOffset.top - 1
-// const bottomEdge = (scene) => scene.mapTileOffset.top + scene.tileHeight
-// const leftEdge = (scene) => scene.mapTileOffset.left - 1
-// const rightEdge = (scene) => scene.mapTileOffset.left + scene.tileWidth
-
 const drawObject = R.curry((world, object: GameObject) => {
   if (Player.is(object)) drawPlayer(world, object)
   if (GrassTile.is(object)) drawGrassTile(world, object)
@@ -154,21 +124,10 @@ const drawPlayer = (world, player) => {
     world.scene.webGl.geometryCache,
     player.type,
     () => {
-      const sizeX = player.size,
-      const sizeY = player.size
-      return new THREE.PlaneGeometry(sizeX, sizeY)
+      return new THREE.PlaneGeometry(player.size, player.size)
     }
   )
   drawGenericColoredTile(world, player.id, player.position, geometry, "#000000")
-}
-
-const readCached = (cache, key, fn) => {
-  let value = cache[key]
-  if (value == undefined) {
-    value = fn()
-    cache[key] = value
-  }
-  return value
 }
 
 const drawGrassTile = (world, tile) => {
@@ -176,9 +135,7 @@ const drawGrassTile = (world, tile) => {
     world.scene.webGl.geometryCache,
     tile.type,
     () => {
-      const sizeX = tile.size / world.scene.tileWidth
-      const sizeY = tile.size / world.scene.tileHeight
-      return new THREE.PlaneGeometry(sizeX, sizeY)
+      return new THREE.PlaneGeometry(tile.size, tile.size)
     }
   )
   drawGenericColoredTile(
@@ -236,21 +193,17 @@ const drawGenericColoredTile = (world, id, position, geometry, color) => {
 // Map world tile coordinates to gl Coordinates which are always -1 -> 1
 // Then include the scene windowing by scaling by half of the gl width & height
 const toGlCoordinate = (world, position) => ({
-  x: (((position.x / world.width) * 2 - 1) * glWidth(world) / 2),
-  y: (-1 * ((position.y / world.height) * 2 - 1) * glHeight(world) / 2),
+  x: position.x - world.width / 2,
+  y: world.height / 2 - position.y,
 })
 
-const glWidth = (world) => (world.width / world.scene.tileWidth)
-const glHeight = (world) => (world.height / world.scene.tileHeight)
-
-// Make sure object is always at the center of the scene
-// by updating offset based on width and height
-// export const followObject = (scene, object) => {
-//   const newOffset = {
-//     top: object.position.y - scene.tileHeight / 2,
-//     left: object.position.x - scene.tileWidth / 2,
-//   }
-//   return { ...scene, mapTileOffset: newOffset }
-// }
-
 export const getDomElement = (scene) => scene.webGl.renderer.domElement
+
+const readCached = (cache, key, fn) => {
+  let value = cache[key]
+  if (value == undefined) {
+    value = fn()
+    cache[key] = value
+  }
+  return value
+}

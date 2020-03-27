@@ -21,13 +21,11 @@ const gameLoop = (world: World.World, prevTimestamp: number) => {
 
 const main = () => {
   console.log("Starting...")
-  const mapSize = 3
-  const pixelSize = 30
+  const mapSize = 50
   let world = World.initialWorld({
     scene: {
-      canvasWidth: pixelSize * mapSize * 2,
-      canvasHeight: pixelSize * mapSize, 
-      tilePixelSize: pixelSize,
+      canvasWidth: 1200,
+      canvasHeight: 800,
     },
     width: mapSize,
     height: mapSize,
