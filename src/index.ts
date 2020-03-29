@@ -33,7 +33,7 @@ const main = () => {
   console.log("Created World...", world)
   Scene.init(world)
   console.log("Initialized scene...")
-  Events.bindEvents(Events.InputSink)
+  Events.bindEvents(Events.InputSink, world)
   console.log("Bound input events...")
   gameLoop(world, now())
 }

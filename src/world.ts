@@ -49,6 +49,7 @@ export const update = (sink: Events.Sink, world: World) => {
   let scene = world.scene
   const dirty = []
 
+  // Move the player if needed
   const { moved: playerMoved, player: newPlayer } = movePlayer(
     sink.keys,
     world,
@@ -56,9 +57,13 @@ export const update = (sink: Events.Sink, world: World) => {
   )
   if (playerMoved) dirty.push(newPlayer)
 
+  // Handle zooming if needed
   if (sink.keys.zoomOut) scene = Scene.zoom(scene, -1)
   if (sink.keys.zoomIn) scene = Scene.zoom(scene, 1)
   Events.flushZoom(sink)
+
+  // Handle mouse clicks if necessary
+  if (sink.mouse.down) Scene.handleClick(scene, sink.mouse.coordinates) 
 
   let objects = Store.markDirty(dirty, world.objects)
   objects = updatePlayer(oldPlayer, newPlayer, objects)

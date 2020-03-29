@@ -23,6 +23,7 @@ type WebGlObject = {
   scene: THREE.Scene
   renderer: THREE.WebGLRenderer
   camera: THREE.PerspectiveCamera
+  raycaster: THREE.Raycaster
   geometryCache: { [key: string]: THREE.Geometry }
 }
 
@@ -68,17 +69,36 @@ const buildWebGlObject = (width, height): WebGlObject => {
   renderer.setSize(width, height)
   camera.position.z = 15
 
+  const raycaster = new THREE.Raycaster()
+
   return {
     scene,
     renderer,
     camera,
+    raycaster,
     geometryCache: {},
   }
 }
 
 export const zoom = (scene: Scene, amt: number) => {
-  scene.webGl.camera.position.z = Utils.constrain(scene.webGl.camera.position.z + amt, MIN_CAMERA_Z, MAX_CAMERA_Z)
+  scene.webGl.camera.position.z = Utils.constrain(
+    scene.webGl.camera.position.z + amt,
+    MIN_CAMERA_Z,
+    MAX_CAMERA_Z
+  )
   return scene
+}
+
+export const handleClick = (scene: Scene, coords: Position.Position) => {
+  const mouse = new THREE.Vector2()
+  mouse.x = (coords.x / scene.config.canvasWidth) * 2 - 1
+  mouse.y = -(coords.y / scene.config.canvasHeight) * 2 + 1
+  const { webGl: gl } = scene
+  gl.raycaster.setFromCamera(mouse, gl.camera)
+  // calculate objects intersecting the picking ray
+  gl.raycaster.intersectObjects(gl.scene.children).forEach(intersect => {
+    (intersect.object as any).material.color.set(0xff0000)
+  })
 }
 
 // Main function to output the world to the screen

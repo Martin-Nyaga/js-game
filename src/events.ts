@@ -1,4 +1,6 @@
 import { partial } from "rambda"
+import { World } from "./world"
+import * as Scene from "./scene"
 
 // Sink to receive all player inputs
 export const InputSink = {
@@ -10,7 +12,10 @@ export const InputSink = {
     zoomIn: false,
     zoomOut: false,
   },
-  mouse: {},
+  mouse: {
+    down: false,
+    coordinates: null
+  },
 }
 export type Sink = typeof InputSink
 
@@ -49,6 +54,37 @@ export const flushZoom = (sink: Sink) => {
   sink.keys.zoomOut = false
   sink.keys.zoomIn = false
 }
+
+const handleMouseDown = (sink: Sink, canvas: HTMLCanvasElement, event: any) => {
+  const rect = canvas.getBoundingClientRect()
+  const canvasPixelCoordinates = {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top
+  }
+  sink.mouse.down = true
+  sink.mouse.coordinates = canvasPixelCoordinates
+}
+
+const handleMouseUp = (sink: Sink, _event: any) => {
+  flushMouseDown(sink)
+}
+
+const handleMouseMove = (sink: Sink, canvas: HTMLCanvasElement, event: any) => {
+  if (sink.mouse.down) {
+    const rect = canvas.getBoundingClientRect()
+    const canvasPixelCoordinates = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    }
+    sink.mouse.coordinates = canvasPixelCoordinates
+  }
+}
+
+export const flushMouseDown = (sink: Sink) => {
+  sink.mouse.down = false
+  sink.mouse.coordinates = null
+}
+
 export const flush = (sink) => {
   for (let key in sink.keys) {
     sink.keys[key] = false
@@ -63,12 +99,16 @@ const handleFocusChange = (sink: Sink, event: any) => {
   if (!document.hasFocus()) flush(sink)
 }
 
-export const bindEvents = (sink: Sink) => {
+export const bindEvents = (sink: Sink, world: World) => {
+  const canvas = Scene.getDomElement(world.scene) 
   document.addEventListener("keydown", partial(handleKeyDown, sink))
   document.addEventListener("keyup", partial(handleKeyUp, sink))
   document.addEventListener(
     "visibilitychange",
     partial(handleFocusChange, sink)
   )
-  window.addEventListener("wheel", partial(handleMouseWheel, sink))
+  canvas.addEventListener("wheel", partial(handleMouseWheel, sink))
+  canvas.addEventListener("mousedown", partial(handleMouseDown, sink, canvas))
+  canvas.addEventListener("mousemove", partial(handleMouseMove, sink, canvas))
+  canvas.addEventListener("mouseup", partial(handleMouseUp, sink))
 }

@@ -1,5 +1,5 @@
 Doing now
-- Map generation
+- Capture mouse clicks?
 
 Keep in mind
 
