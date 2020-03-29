@@ -6,6 +6,7 @@ import {
   GrassTile,
   SandTile,
   WaterTile,
+  Tree,
 } from "./gameObjects"
 import * as Position from "./position"
 import * as Store from "./objectStore"
@@ -33,9 +34,8 @@ export type Scene = {
 }
 
 const canvasStyle = {
-  border: "thick black solid",
   display: "block",
-  margin: "100px auto",
+  margin: "0 auto",
 }
 export const init = (world: World.World) => {
   const { scene } = world
@@ -96,8 +96,8 @@ export const handleClick = (scene: Scene, coords: Position.Position) => {
   const { webGl: gl } = scene
   gl.raycaster.setFromCamera(mouse, gl.camera)
   // calculate objects intersecting the picking ray
-  gl.raycaster.intersectObjects(gl.scene.children).forEach(intersect => {
-    (intersect.object as any).material.color.set(0xff0000)
+  gl.raycaster.intersectObjects(gl.scene.children).forEach((intersect) => {
+    ;(intersect.object as any).material.color.set(0xff0000)
   })
 }
 
@@ -127,7 +127,7 @@ const drawObject = R.curry((world, object: GameObject) => {
   if (GrassTile.is(object)) drawGrassTile(world, object)
   if (WaterTile.is(object)) drawWaterTile(world, object)
   if (SandTile.is(object)) drawSandTile(world, object)
-  // if (EmptyTile.is(object)) drawEmptyTile(scene, object)
+  if (Tree.is(object)) drawTree(world, object)
 })
 
 const drawPlayer = (world, player) => {
@@ -215,6 +215,34 @@ const drawGenericColoredTile = (world, id, position, geometry, color) => {
     newTile.position.y = y
     gl.scene.add(newTile)
   }
+}
+
+const drawTree = (world, tree) => {
+  const geometry = readCached(
+    world.scene.webGl.geometryCache,
+    tree.type,
+    () => {
+      const { x, y } = toGlCoordinate(world, tree.position)
+      const buffer = new THREE.BufferGeometry()
+      const points = new Float32Array([
+        x + 1 , y     , 0 ,
+        x     , y + 1 , 0 ,
+        x - 1 , y     , 0 ,
+
+        x - 1 , y     , 0 ,
+        x     , y - 1 , 0 ,
+        x + 1 , y     , 0 ,
+      ])
+      buffer.setAttribute('position', new THREE.BufferAttribute(points, 3))
+      return buffer
+    }
+  )
+  const { webGl: gl } = world.scene
+  const color = "#00ff00"
+  const material = new THREE.MeshBasicMaterial({ color })
+  const treeTile = new THREE.Mesh(geometry, material)
+  treeTile.name = tree.id
+  gl.scene.add(treeTile)
 }
 
 // Map world tile coordinates to gl Coordinates which are always -1 -> 1

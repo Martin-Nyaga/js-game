@@ -15,7 +15,7 @@ import {
 
 export const generateMap = (width, height): Store.ObjectStore => {
   // Generate 3 different map grids ("fractals") which have random numbers at
-  // each grid point. Each grid is contiguous at different length scales. 
+  // each grid point. Each grid is contiguous at different length scales.
   const fractals = [1, Math.ceil(height / 20), Math.ceil(height / 3)].map((i) =>
     generateFractal(width, height, 1, 15, i)
   )
@@ -60,7 +60,20 @@ export const generateMap = (width, height): Store.ObjectStore => {
         variant: tileVariant,
       } as WaterTile.WaterTile
     }
-    return Store.add(tile, store)
+    store = Store.add(tile, store)
+
+    if (Math.random() < 0.01) {
+      store = Store.add(
+        {
+          id: objectId(),
+          type: "tree",
+          position: { x, y } as Position.Position,
+          size: 4,
+        },
+        store
+      )
+    }
+    return store
   }, Store.empty() as Store.ObjectStore)
 }
 

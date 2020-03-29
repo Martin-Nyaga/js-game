@@ -21,11 +21,11 @@ const gameLoop = (world: World.World, prevTimestamp: number) => {
 
 const main = () => {
   console.log("Starting...")
-  const mapSize = 100
+  const mapSize = 20
   let world = World.initialWorld({
     scene: {
-      canvasWidth: 1200,
-      canvasHeight: 800,
+      canvasWidth: 1500,
+      canvasHeight: 1000
     },
     width: mapSize,
     height: mapSize,
