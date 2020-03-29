@@ -1,4 +1,4 @@
-import * as R from "ramda"
+import * as R from "rambda"
 import * as Position from "./position"
 import { GameObject, ObjectId } from "./gameObjects"
 

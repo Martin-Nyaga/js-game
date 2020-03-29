@@ -1,4 +1,4 @@
-import { toPairs } from "ramda"
+import { toPairs } from "rambda"
 
 const isUpper = (c: string) => c.toUpperCase() == c
 

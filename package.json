@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "sideEffects": false,
   "dependencies": {
-    "@types/ramda": "^0.27.0",
-    "ramda": "^0.27.0",
+    "rambda": "^5.0.0",
     "three": "^0.115.0",
     "ts-loader": "^6.2.2",
     "typescript": "^3.8.3",

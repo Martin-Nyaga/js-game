@@ -1,4 +1,4 @@
-import { partial, pipe, range } from "ramda"
+import { partial, pipe, range } from "rambda"
 
 import * as Events from "./events"
 import * as World from "./world"
@@ -11,17 +11,17 @@ const gameLoop = (world: World.World, prevTimestamp: number) => {
   const timestamp = now()
   const elapsed = timestamp - prevTimestamp
   if (elapsed < 1000 / FPS)
-    return requestAnimationFrame(partial(gameLoop, [world, prevTimestamp]))
+    return requestAnimationFrame(partial(gameLoop, world, prevTimestamp))
   const nextWorld = pipe(
-    partial(World.update, [Events.InputSink]),
+    partial(World.update, Events.InputSink),
     Scene.render
   )(world)
-  requestAnimationFrame(partial(gameLoop, [nextWorld, timestamp]))
+  requestAnimationFrame(partial(gameLoop, nextWorld, timestamp))
 }
 
 const main = () => {
   console.log("Starting...")
-  const mapSize = 50
+  const mapSize = 100
   let world = World.initialWorld({
     scene: {
       canvasWidth: 1200,
@@ -30,7 +30,7 @@ const main = () => {
     width: mapSize,
     height: mapSize,
   })
-  console.log("Created World...")
+  console.log("Created World...", world)
   Scene.init(world)
   console.log("Initialized scene...")
   Events.bindEvents(Events.InputSink)

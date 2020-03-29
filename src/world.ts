@@ -1,19 +1,12 @@
-import * as R from "ramda"
+import * as R from "rambda"
 
 import * as Scene from "./scene"
 import * as Events from "./events"
 import * as Position from "./position"
 import * as Store from "./objectStore"
+import { generateMap } from "./mapGen"
 
-import {
-  GameObject,
-  ObjectId,
-  objectId,
-  Player,
-  GrassTile,
-  SandTile,
-  WaterTile,
-} from "./gameObjects"
+import { ObjectId, Player } from "./gameObjects"
 
 export type World = {
   scene: Scene.Scene
@@ -49,21 +42,6 @@ export const initialWorld = ({ scene, width, height }: WorldConfig): World => {
   }
 }
 
-const generateMap = (width, height): Store.ObjectStore =>
-  R.range(0, width * height).reduce((store, i) => {
-    const x = i % width
-    const y = Math.floor(i / height)
-
-    let tile = {
-      id: objectId(),
-      type: "grassTile",
-      position: { x, y } as Position.Position,
-      size: 1,
-      variant: Math.ceil(Math.random() * 5),
-    } as GrassTile.GrassTile
-    return Store.add(tile, store)
-  }, Store.empty() as Store.ObjectStore)
-
 // Main function to update the world based on all current events
 export const update = (sink: Events.Sink, world: World) => {
   let player = getPlayer(world)
@@ -81,6 +59,7 @@ export const update = (sink: Events.Sink, world: World) => {
   if (sink.keys.zoomOut) scene = Scene.zoom(scene, -1)
   if (sink.keys.zoomIn) scene = Scene.zoom(scene, 1)
   Events.flushZoom(sink)
+
   let objects = Store.markDirty(dirty, world.objects)
   objects = updatePlayer(oldPlayer, newPlayer, objects)
 
@@ -115,9 +94,10 @@ const movePlayer = (keys, world, player) => {
   return { player, moved }
 }
 
-const updatePlayer = R.curry((oldPlayer, newPlayer, store) =>
-  R.pipe(Store.remove(oldPlayer), Store.add(newPlayer))(store)
-)
+const updatePlayer = (oldPlayer, newPlayer, store) => {
+  store = Store.remove(oldPlayer, store)
+  return Store.add(newPlayer, store)
+}
 
 export const getPlayer = (world: World): Player.Player =>
   Store.getById(world.playerId, world.objects)

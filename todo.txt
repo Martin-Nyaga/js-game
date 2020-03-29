@@ -1,5 +1,4 @@
 Doing now
-- Zooming map with the mouse wheel
 - Map generation
 
 Keep in mind

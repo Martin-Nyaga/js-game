@@ -1,4 +1,4 @@
-import { partial } from "ramda"
+import { partial } from "rambda"
 
 // Sink to receive all player inputs
 export const InputSink = {
@@ -64,11 +64,11 @@ const handleFocusChange = (sink: Sink, event: any) => {
 }
 
 export const bindEvents = (sink: Sink) => {
-  document.addEventListener("keydown", partial(handleKeyDown, [sink]))
-  document.addEventListener("keyup", partial(handleKeyUp, [sink]))
+  document.addEventListener("keydown", partial(handleKeyDown, sink))
+  document.addEventListener("keyup", partial(handleKeyUp, sink))
   document.addEventListener(
     "visibilitychange",
-    partial(handleFocusChange, [sink])
+    partial(handleFocusChange, sink)
   )
-  window.addEventListener("wheel", partial(handleMouseWheel, [sink]))
+  window.addEventListener("wheel", partial(handleMouseWheel, sink))
 }

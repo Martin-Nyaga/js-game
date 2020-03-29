@@ -2,7 +2,7 @@ import { GameObject } from "."
 
 export interface GrassTile extends GameObject {
   type: "grassTile"
-  variant: 1 | 2 | 3 | 4 | 5
+  variant: 1 | 2 | 3 | 4 | 5 
   size: 1
 }
 

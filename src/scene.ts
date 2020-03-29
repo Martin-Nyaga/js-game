@@ -10,7 +10,7 @@ import {
 import * as Position from "./position"
 import * as Store from "./objectStore"
 import * as JCSS from "./jcss"
-import * as R from "ramda"
+import * as R from "rambda"
 import * as World from "./world"
 import * as Utils from "./utils"
 
@@ -105,8 +105,8 @@ export const render = (world: World.World) => {
 const drawObject = R.curry((world, object: GameObject) => {
   if (Player.is(object)) drawPlayer(world, object)
   if (GrassTile.is(object)) drawGrassTile(world, object)
-  // if (WaterTile.is(object)) drawWaterTile(scene, object)
-  // if (SandTile.is(object)) drawSandTile(scene, object)
+  if (WaterTile.is(object)) drawWaterTile(world, object)
+  if (SandTile.is(object)) drawSandTile(world, object)
   // if (EmptyTile.is(object)) drawEmptyTile(scene, object)
 })
 
@@ -138,6 +138,40 @@ const drawGrassTile = (world, tile) => {
   )
 }
 
+const drawSandTile = (world, tile) => {
+  const geometry = readCached(
+    world.scene.webGl.geometryCache,
+    tile.type,
+    () => {
+      return new THREE.PlaneGeometry(tile.size, tile.size)
+    }
+  )
+  drawGenericColoredTile(
+    world,
+    tile.id,
+    tile.position,
+    geometry,
+    SandTile.color(tile)
+  )
+}
+
+const drawWaterTile = (world, tile) => {
+  const geometry = readCached(
+    world.scene.webGl.geometryCache,
+    tile.type,
+    () => {
+      return new THREE.PlaneGeometry(tile.size, tile.size)
+    }
+  )
+  drawGenericColoredTile(
+    world,
+    tile.id,
+    tile.position,
+    geometry,
+    WaterTile.color(tile)
+  )
+}
+
 const drawGenericColoredTile = (world, id, position, geometry, color) => {
   const { webGl: gl } = world.scene
 
@@ -162,24 +196,6 @@ const drawGenericColoredTile = (world, id, position, geometry, color) => {
     gl.scene.add(newTile)
   }
 }
-
-// const drawSandTile = (world, tile) =>
-//   drawGenericColoredTile(
-//     world,
-//     tile.id,
-//     tile.position,
-//     tile.size,
-//     SandTile.color(tile)
-//   )
-
-// const drawWaterTile = (world, tile) =>
-//   drawGenericColoredTile(
-//     world,
-//     tile.id,
-//     tile.position,
-//     tile.size,
-//     WaterTile.color(tile)
-//   )
 
 // Map world tile coordinates to gl Coordinates which are always -1 -> 1
 // Then include the scene windowing by scaling by half of the gl width & height
