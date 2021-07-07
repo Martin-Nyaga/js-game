@@ -63,7 +63,13 @@ export const update = (sink: Events.Sink, world: World) => {
   Events.flushZoom(sink)
 
   // Handle mouse clicks if necessary
-  if (sink.mouse.down) Scene.handleClick(scene, sink.mouse.coordinates) 
+  if (sink.mouse.down) {
+    const clickedObjects = Scene.getClickedObjectIds(
+      scene,
+      sink.mouse.coordinates
+    ).map(id => Store.getById(id, world.objects))
+    console.log("clicked:", clickedObjects)
+  }
 
   let objects = Store.markDirty(dirty, world.objects)
   objects = updatePlayer(oldPlayer, newPlayer, objects)

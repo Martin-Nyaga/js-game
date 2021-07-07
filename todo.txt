@@ -1,14 +1,16 @@
 Doing now
-- Capture mouse clicks?
+- First thing is to allow the player to be able to mine some type of resource,
+  probably coal makes the most sense. So I will need a type of coal object,
+  which is mineable, then I will need to be able to handle the clicking and
+  mining of that object, and finally, I will need to handle transferring that
+  object to some kind of inventory.
 
 Keep in mind
-
-- I just realised that the implications of WebGls axis scheme means that
-  having non-square maps is nasty. So while canvas can be any size.
-  Practically, I will limit maps to square sizes.
+- I just realised that the implications of WebGls axis scheme means that having
+  non-square maps is tricky. So while canvas can be any size, practically, I
+  will limit maps to square sizes.
 
 To do at some point
 
-- Understand the difference between WebGL1
-  and WebGL2, and see if it's relevant
+- Understand the difference between WebGL1 and WebGL2, and see if it's relevant
 - Test on different screen resolutions, to see how WebGL drawing changes
